@@ -32,7 +32,8 @@ function Plane({ containerRef }: PlaneProps) {
       uniforms: {
         uTexture: { value: texture },
         uProgress: { value: 0 },
-        uSmoothness: { value: 0.15 },
+        uSmoothness: { value: 0.18 },
+        uOffset: { value: -0.35 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -47,10 +48,12 @@ function Plane({ containerRef }: PlaneProps) {
         uniform sampler2D uTexture;
         uniform float uProgress;
         uniform float uSmoothness;
+        uniform float uOffset;
 
         void main() {
-          vec4 tex = texture2D(uTexture, vUv);
-          float reveal = smoothstep(uProgress - uSmoothness, uProgress, vUv.y);
+          vec2 animatedUv = vec2(vUv.x, fract(vUv.y + uOffset));
+          vec4 tex = texture2D(uTexture, animatedUv);
+          float reveal = smoothstep(uProgress - uSmoothness, uProgress, animatedUv.y);
           tex.a *= clamp(reveal, 0.0, 1.0);
           gl_FragColor = tex;
         }
@@ -61,19 +64,32 @@ function Plane({ containerRef }: PlaneProps) {
     meshRef.current.material = material;
 
     const triggerElement = containerRef.current;
-    const tween = gsap.to(material.uniforms.uProgress, {
-      value: 1,
-      ease: "power2.out",
-      duration: 2,
+    const tween = gsap.timeline({
       scrollTrigger: triggerElement
         ? {
             trigger: triggerElement,
-            start: "top 75%",
-            end: "top 10%",
+            start: "top 80%",
+            end: "top 5%",
             scrub: true,
           }
         : undefined,
     });
+
+    tween.to(material.uniforms.uOffset, {
+      value: 0,
+      ease: "power3.out",
+      duration: 2.2,
+    });
+
+    tween.to(
+      material.uniforms.uProgress,
+      {
+        value: 1,
+        ease: "power2.out",
+        duration: 2,
+      },
+      0
+    );
 
     return () => {
       tween.kill();
