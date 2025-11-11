@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useRef, type MutableRefObject } from "react";
 import { Canvas, useLoader } from "@react-three/fiber";
@@ -31,9 +31,10 @@ function Plane({ containerRef }: PlaneProps) {
     const material = new THREE.ShaderMaterial({
       uniforms: {
         uTexture: { value: texture },
-        uProgress: { value: 0 },
+        uProgress: { value: 0.2 },
         uSmoothness: { value: 0.18 },
         uOffset: { value: -0.35 },
+        uLineProgress: { value: 0 },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -49,12 +50,85 @@ function Plane({ containerRef }: PlaneProps) {
         uniform float uProgress;
         uniform float uSmoothness;
         uniform float uOffset;
+        uniform float uLineProgress;
+
+        float lineSegment(vec2 uv, vec2 a, vec2 b, float width) {
+          vec2 pa = uv - a;
+          vec2 ba = b - a;
+          float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+          float d = length(pa - ba * h);
+          return 1.0 - smoothstep(width, width + 0.0015, d);
+        }
+
+        float rectangleOutline(vec2 uv, vec2 mn, vec2 mx, float width) {
+          float l = lineSegment(uv, mn, vec2(mx.x, mn.y), width);
+          float r = lineSegment(uv, vec2(mn.x, mx.y), mx, width);
+          float b = lineSegment(uv, mn, vec2(mn.x, mx.y), width);
+          float t = lineSegment(uv, vec2(mx.x, mn.y), mx, width);
+          return max(max(l, r), max(t, b));
+        }
+
+        float arc(vec2 uv, vec2 center, float radius, vec2 quadrant, float width) {
+          vec2 rel = uv - center;
+          float mask = step(0.0, rel.x * quadrant.x) * step(0.0, rel.y * quadrant.y);
+          float dist = abs(length(rel) - radius);
+          float line = 1.0 - smoothstep(width, width + 0.0015, dist);
+          return line * mask;
+        }
+
+        float triangleOutline(vec2 uv, vec2 a, vec2 b, vec2 c, float width) {
+          float ab = lineSegment(uv, a, b, width);
+          float bc = lineSegment(uv, b, c, width);
+          float ca = lineSegment(uv, c, a, width);
+          return max(ab, max(bc, ca));
+        }
 
         void main() {
           vec2 animatedUv = vec2(vUv.x, fract(vUv.y + uOffset));
           vec4 tex = texture2D(uTexture, animatedUv);
           float reveal = smoothstep(uProgress - uSmoothness, uProgress, animatedUv.y);
           tex.a *= clamp(reveal, 0.0, 1.0);
+
+          const float PHI = 1.61803398875;
+          float lineWidth = 0.0022;
+
+          vec2 inset = vec2(0.12, 0.1);
+          float baseWidth = 0.76;
+          float baseHeight = baseWidth / PHI;
+          vec2 baseMin = inset;
+          vec2 baseMax = inset + vec2(baseWidth, baseHeight);
+
+          float goldenRect = rectangleOutline(vUv, baseMin, baseMax, lineWidth);
+
+          vec2 square1Max = baseMin + vec2(baseHeight, baseHeight);
+          float square1 = rectangleOutline(vUv, baseMin, square1Max, lineWidth);
+
+          vec2 square2Min = square1Max;
+          vec2 square2Max = vec2(baseMax.x, baseMin.y + baseHeight);
+          float square2 = rectangleOutline(vUv, square2Min, square2Max, lineWidth);
+
+          float spiral1 = arc(vUv, square1Max, baseHeight, vec2(-1.0, 1.0), lineWidth);
+          float spiral2 = arc(vUv, vec2(baseMax.x, square2Max.y), square2Max.x - square1Max.x, vec2(-1.0, -1.0), lineWidth);
+          float spiral3 = arc(vUv, vec2(square2Max.x, baseMin.y + baseHeight), baseHeight / PHI, vec2(1.0, -1.0), lineWidth);
+
+          vec2 triA = vec2(0.2, 0.72);
+          vec2 triB = vec2(0.64, 0.72);
+          vec2 triC = vec2(0.2, 0.28);
+          float triangle = triangleOutline(vUv, triA, triB, triC, lineWidth);
+
+          float squareHyp = rectangleOutline(vUv, vec2(0.64, 0.52), vec2(0.88, 0.76), lineWidth);
+          float squareCat = rectangleOutline(vUv, vec2(0.2, 0.74), vec2(0.46, 1.0), lineWidth);
+
+          float geometryOverlay = goldenRect + square1 + square2 + spiral1 + spiral2 + spiral3 + triangle + squareHyp + squareCat;
+
+          float flow = dot(normalize(vec2(0.78, 0.62)), vUv);
+          float revealMask = smoothstep(uLineProgress - 0.1, uLineProgress + 0.02, flow);
+          float shimmer = sin((flow - uLineProgress * 1.2) * 40.0) * 0.05;
+
+          float overlayFactor = clamp(geometryOverlay * (revealMask + shimmer), 0.0, 1.0);
+          vec3 overlayColor = mix(tex.rgb, vec3(0.88, 0.78, 0.42), 0.65);
+          tex.rgb = mix(tex.rgb, overlayColor, overlayFactor);
+
           gl_FragColor = tex;
         }
       `,
@@ -87,8 +161,18 @@ function Plane({ containerRef }: PlaneProps) {
         value: 1,
         ease: "power2.out",
         duration: 2,
-      },
-      0
+        },
+       0
+    );
+
+    tween.to(
+      material.uniforms.uLineProgress,
+      {
+        value: 1.4,
+        ease: "power1.inOut",
+        duration: 2.8,
+        },
+      0.6
     );
 
     return () => {
@@ -180,11 +264,6 @@ export default function HeroSection() {
               autoRotateSpeed={0.5}
             />
           </Canvas>
-
-          <div className="canvas-overlays">
-            <div className="glow-1 animate-pulse-slow" />
-            <div className="glow-2 animate-pulse-slow" />
-          </div>
         </div>
 
         <div className="hero-content">
@@ -205,4 +284,3 @@ export default function HeroSection() {
     </main>
   );
 }
-

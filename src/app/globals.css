@@ -17,7 +17,7 @@ body {
   height: 100%;
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: "Montserrat", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 body {
@@ -30,76 +30,47 @@ main {
 
 .hero-section {
   position: relative;
-  display: block;
   height: 100vh;
   width: 100%;
   overflow: hidden;
   padding-top: 5rem;
-  background: radial-gradient(circle at top left, rgba(253, 230, 138, 0.2), transparent 60%),
-    radial-gradient(circle at bottom right, rgba(254, 240, 138, 0.15), transparent 65%),
-    var(--background);
+  background: radial-gradient(circle at top left, rgba(253, 230, 138, 0.05), transparent 70%),
+    radial-gradient(circle at bottom right, rgba(254, 240, 138, 0.04), transparent 75%), var(--background);
 }
 
 .hero-gradient-bg {
   position: absolute;
   inset: 0;
   z-index: 0;
-  background: radial-gradient(circle at center, rgba(255, 248, 225, 0.4), transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(254, 243, 199, 0.4));
+  background: radial-gradient(circle at 42% 32%, rgba(255, 248, 225, 0.14), transparent 65%),
+    radial-gradient(circle at 68% 74%, rgba(255, 236, 179, 0.08), transparent 62%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), rgba(254, 243, 199, 0.12));
+  opacity: 0.32;
+  pointer-events: none;
 }
 
 .canvas-wrapper {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 1;
 }
 
 .canvas-wrapper canvas {
   filter: saturate(1.1);
 }
 
-.canvas-overlays {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-
-.glow-1,
-.glow-2 {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(72px);
-  opacity: 0.4;
-}
-
-.glow-1 {
-  top: 25%;
-  left: 20%;
-  width: 16rem;
-  height: 16rem;
-  background: rgba(250, 204, 21, 0.2);
-}
-
-.glow-2 {
-  bottom: 20%;
-  right: 20%;
-  width: 24rem;
-  height: 24rem;
-  background: rgba(251, 191, 36, 0.15);
-  animation-delay: 1s;
-}
-
 .hero-content {
   position: relative;
   z-index: 10;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2rem;
   padding: 0 1.5rem;
   text-align: center;
-  gap: 2rem;
+  background: transparent;
+  box-shadow: none;
 }
 
 .hero-title {
@@ -117,21 +88,5 @@ main {
   color: #4b5563;
   opacity: 0;
   transform: translateY(20px);
-}
-
-.animate-pulse-slow {
-  animation: pulse-slow 6s ease-in-out infinite;
-}
-
-@keyframes pulse-slow {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.05);
-  }
 }
 
